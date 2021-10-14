@@ -60,11 +60,8 @@ class Bookmark {
             el.parentElement.parentElement.parentElement.remove();
 
             // Remove From Local Storage
-            bkms.forEach((bkm,index)=>{
-                if(bkm.id == dataId){
-                    Bookmark.removeFromLocal(index);
-                }
-            })
+            let index = bkms.findIndex((bkm) => bkm.id == dataId);
+            Bookmark.removeFromLocal(index);
         }
     }
 
