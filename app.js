@@ -7,22 +7,29 @@ const bookmarkes = document.querySelector('.bookmarkes');
 // Bookmark Class
 class Bookmark {
 
-    name;
-    url;
-    date;
-
-    // Filter input and assign it to the class properties
-    filterInput(input) {
-
-        let index = input.indexOf('#');
-        this.name = input.slice(index + 1);
-        this.url = input.slice(0, index).trim();
-        // Create Date
-        const date = new Date();
-        this.date = `${date.getUTCDay()}/${date.getUTCMonth()}/${date.getUTCFullYear()}`;
-
+    constructor(input){
+        this.id = this.genetareId();
+        this.name = this.extractName(input);
+        this.url = this.extractUrl(input);
+        this.date = this.genetareDate();
     }
 
+    genetareId(){
+        return Bookmark.getFromLocal().length + 1;
+    }
+
+    extractName(input){
+        return input.slice(input.indexOf('#') + 1);
+    }
+
+    extractUrl(input){
+        return input.slice(0, input.indexOf('#')).trim();
+    }
+
+    genetareDate(){
+        const date = new Date();
+        return `${date.getUTCDay()}/${date.getUTCMonth()}/${date.getUTCFullYear()}`;
+    }
 
     // Create and append bookmark to the UI
     displayBookmark() {
@@ -33,7 +40,7 @@ class Bookmark {
                     <div class="name">${this.name}</div>
                     <div class="btns">
                         <div class="visit"><a href="${this.url}" target="_blanc" title="To ${this.name}">visit</a></div>
-                         <button class="delete">Delete</button>
+                         <button class="delete" data-id="${this.id}">Delete</button>
                     </div>
                 </div>
                 <small>Created at : ${this.date}</small>
@@ -44,31 +51,25 @@ class Bookmark {
     }
 
     // Remove bookmark
-    remove(el) {
-        let bkms = new Bookmark().getFromLocal();
-        let len = bkms.length;
-        let name = '';
-
+    static remove(el) {
         if (el.className === 'delete') {
-            name = el.parentElement.previousElementSibling.textContent;
+
+            let bkms = this.getFromLocal();
+            let dataId = el.getAttribute('data-id');
             // Remove from UI
             el.parentElement.parentElement.parentElement.remove();
+
             // Remove From Local Storage
-            if (len === 1) {
-                bkms.splice(0, 1);
-            } else {
-                for (let i = 0; i < len - 1; i++) {
-                    if (bkms[i].name === name) {
-                        bkms.splice(i, 1);
-                    }
+            bkms.forEach((bkm,index)=>{
+                if(bkm.id == dataId){
+                    Bookmark.removeFromLocal(index);
                 }
-            }
-            localStorage.setItem('bookm', JSON.stringify(bkms));
+            })
         }
     }
 
     // Get from local storage
-    getFromLocal() {
+    static getFromLocal() {
         let bookm;
         if (!localStorage.getItem('bookm')) {
             bookm = [];
@@ -79,13 +80,20 @@ class Bookmark {
     }
 
     // Save to localStorage
-    saveToLocal(book) {
+    static saveToLocal(book) {
         let bookm = this.getFromLocal(); //let bookm = getLocal();
         bookm.push(book);
         localStorage.setItem('bookm', JSON.stringify(bookm));
     }
 
-} // END Class 
+    // Remove from local storage
+    static removeFromLocal(index){
+        let bookmarkes = this.getFromLocal();
+        bookmarkes.splice(index,1);
+        localStorage.setItem('bookm', JSON.stringify(bookmarkes));
+    }
+
+}
 
 
 // Init function
@@ -95,10 +103,9 @@ const init = (e) => {
         alert('Ops ! it seems like you forgot somthing ;) \n Please put a valid url :)');
     } else {
 
-        const newbookmark = new Bookmark();
-        newbookmark.filterInput(input.value);
+        const newbookmark = new Bookmark(input.value);
         newbookmark.displayBookmark();
-        newbookmark.saveToLocal(newbookmark);
+        Bookmark.saveToLocal(newbookmark);
 
         // Clear input field
         input.value = '';
@@ -111,7 +118,7 @@ submit.addEventListener('click', init);
 
 // Display saved bookmarkes
 document.addEventListener('DOMContentLoaded', () => {
-    const bkms = new Bookmark().getFromLocal();
+    const bkms = Bookmark.getFromLocal();
     let bookmark = ' ';
     bkms.forEach(item => {
         bookmark += `
@@ -120,7 +127,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div class="name">${item.name}</div>
                     <div class="btns">
                         <div class="visit"><a href="${item.url}" target="_blanc" title="To ${item.name}">visit</a></div>
-                         <button class="delete">Delete</button>
+                         <button class="delete" data-id="${item.id}">Delete</button>
                     </div>
                 </div>
                 <small>Created at : ${item.date}</small>
@@ -134,5 +141,5 @@ document.addEventListener('DOMContentLoaded', () => {
 // Remove bookmark
 window.addEventListener('click', (e) => {
     let el = e.target;
-    new Bookmark().remove(el);
+    Bookmark.remove(el);
 });
